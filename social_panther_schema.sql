@@ -1,8 +1,8 @@
---Panther@Social
+--Social@Panther
 --Terence Sperringer (tps23)
 --Sizhe Sun (sis61)
 
---Schema for Panther@Social
+--Schema for Social@Panther
 
 ---DROP ALL TABLES TO MAKE SURE THE SCHEMA IS CLEAR
 DROP TABLE PROFILE CASCADE CONSTRAINTS;
