@@ -6,6 +6,13 @@
 
 <body>
 	<div id="output">
+		<div>
+			<h3 style="margin: 0px;">--INSERT GROUPS</h3>
+			<span>INSERT INTO GROUPS (name, description) VALUES ('</span>
+				<iframe id="group-frame" src="http://5e.d20srd.org/name/rpc.cgi?type=Party&n=10" sandbox="allow-top-navigation" onload="DATA_GENERATOR.generateData()"></iframe>
+			<span>', 'A group')</span>
+		</div>
+		<br>
 	</div>
 </body>
 </html>
