@@ -2,7 +2,7 @@
 --Terence Sperringer (tps23)
 --Sizhe Sun (sis61)
 
--- Schema for Panther@Social
+--Schema for Panther@Social
 
 ---DROP ALL TABLES TO MAKE SURE THE SCHEMA IS CLEAR
 DROP TABLE PROFILE CASCADE CONSTRAINTS;
@@ -25,7 +25,7 @@ CREATE TABLE PROFILE(
 	lastlogin     timestamp,
 		CONSTRAINT PROFILE_PK PRIMARY KEY (userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: 
+--notes: TODO! lastlogin will be updated by mechanism such as trigger/procedure
 
 
 --friends (userID1, userID2, JDate, message)
@@ -38,7 +38,7 @@ CREATE TABLE FRIENDS(
 		CONSTRAINT FRIENDS_FK1 FOREIGN KEY (userID1) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT FRIENDS_FK2 FOREIGN KEY (userID2) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: 
+--notes: TODO! JDate should get the current date after a FRIENDS entry is created
 
 
 --pendingFriends (fromID, toID, message)
@@ -50,7 +50,7 @@ CREATE TABLE PENDING_FRIENDS(
 		CONSTRAINT PENDING_FRIENDS_FK1 FOREIGN KEY (fromID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_FRIENDS_FK2 FOREIGN KEY (toID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: 
+--notes: message should probably default to something like "I would like to befriend you."
 
 
 --messages (msgID, fromID, message, toUserID, toGroupID, dateSent)
@@ -87,7 +87,7 @@ CREATE TABLE GROUPS(
 	description varchar2(200),
 		CONSTRAINT GROUPS_PK PRIMARY KEY (gID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: 
+--notes: TODO! After a group is created, the creator should probably be added to GROUP_MEMBERSHIP
 
 
 --groupMembership (gID, userID, role)
@@ -99,7 +99,7 @@ CREATE TABLE GROUP_MEMBERSHIP(
 		CONSTRAINT GROUP_MEMBERSHIP_PK PRIMARY KEY (gID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT GROUP_MEMBERSHIP_FK1 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: 
+--notes: TODO! The first member should have their role changed to manager.
 
 
 --pendingGroupmembers (gID, userID, message)
