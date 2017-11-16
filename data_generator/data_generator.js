@@ -18,7 +18,7 @@
 var DATA_GENERATOR;
 
 $(document).ready(function() {
-	var randomUserAPI = 'https://randomuser.me/api/',
+	var randomUserAPI = 'https://randomuser.me/api/?nat=AU,BR,CA,CH,DE,DK,ES,FI,FR,GB,IE,NL,NZ,TR,US',
 		fantasyGroupGeneratorAPI = 'http://5e.d20srd.org/name/rpc.cgi?type=Party',
 		quotesAPI = 'https://got-quotes.herokuapp.com/quotes',
 		userCount = 100,
@@ -65,7 +65,18 @@ $(document).ready(function() {
 				url: quotesAPI,
 				dataType: 'json',
 				success: function(result, status, xhr) {
+					var lastIndex = DATA_GENERATOR.messages.length;
+					
 					DATA_GENERATOR.messages.push(result.quote.replace(/[']/g, "''"));
+					
+					if(DATA_GENERATOR.messages[lastIndex].length > 200) {
+						DATA_GENERATOR.messages[lastIndex] = DATA_GENERATOR.messages[lastIndex].substr(0, 197) + "...";
+						
+						if((DATA_GENERATOR.messages[lastIndex].charAt(196) === "'") && (DATA_GENERATOR.messages[lastIndex].charAt(195) !== "'")) {
+							DATA_GENERATOR.messages[lastIndex] = DATA_GENERATOR.messages[lastIndex].substr(0, 196) + "...";
+						}
+					}
+					
 					DATA_GENERATOR.processData();
 					
 					return;
@@ -79,7 +90,7 @@ $(document).ready(function() {
 	DataGenerator.prototype.getUsers = function() {
 		$.ajax({
 			type: "GET",
-			url: randomUserAPI + '?results=' + userCount,
+			url: randomUserAPI + '&results=' + userCount,
 			dataType: 'json',
 			success: function(result, status, xhr) {
 				DATA_GENERATOR.users = result.results;
@@ -153,13 +164,16 @@ $(document).ready(function() {
 	}
 	
 	function appendBR() {
-		return visualOutput.append(document.createElement("br"));
+		visualOutput.append(document.createElement("br"));
+		return;
 	}
 	
 	DataGenerator.prototype.createSQL = function() {
 		var i,
 			date = new Date(),
-			dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
+			dateString = "TO_DATE('" +
+				date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " +
+				date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + "', 'YYYY-MM-DD HH24:MI:SS')",
 			div = document.createElement("div");
 		
 		div.innerHTML = "<strong>--INSERT USERS:</strong>";
@@ -168,15 +182,15 @@ $(document).ready(function() {
 			div = document.createElement("div");
 			div.innerHTML = "<span>INSERT INTO PROFILE (userID, name, email, password, date_of_birth) VALUES (" +
 				i + ", " +
-				"'" + this.users[i].name.title + ' ' + this.users[i].name.first + ' ' + this.users[i].name.last + "', " +
+				"'" + this.users[i].name.first + ' ' + this.users[i].name.last + "', " +
 				"'" + this.users[i].email + "'," +
 				"'" + this.users[i].login.password + "', " +
-				"'" + this.users[i].dob + "');</span>";
+				"TO_DATE('" + this.users[i].dob + "', 'YYYY-MM-DD HH24:MI:SS'));</span>";
 			visualOutput.append(div);
 		}
 		appendBR();
 		
-		
+		div = document.createElement("div");
 		div.innerHTML = "<strong>--INSERT FRIENDSHIPS:</strong>";
 		visualOutput.append(div);
 		for(i = 0; i < this.friends.length; i++) {
@@ -184,7 +198,7 @@ $(document).ready(function() {
 			div.innerHTML = "<span>INSERT INTO FRIENDS (userID1, userID2, JDate, message) VALUES (" +
 				this.friends[i].userID + ", " +
 				this.friends[i].friendID + ", " +
-				"'" + dateString + "', " +
+				dateString + ", " +
 				"'Hello, " + this.users[this.friends[i].friendID].name.title +
 				' ' + this.users[this.friends[i].friendID].name.first +
 				' ' + this.users[this.friends[i].friendID].name.last +
@@ -193,22 +207,28 @@ $(document).ready(function() {
 		}
 		appendBR();
 		
+		div = document.createElement("div");
 		div.innerHTML = "<strong>--INSERT MESSAGES:</strong>";
 		visualOutput.append(div);
 		for(i = 0; i < this.messages.length; i++) {
 			div = document.createElement("div");
-			div.innerHTML = "<span>INSERT INTO MESSAGES (fromID, message, toUserID, toGroupID, dateSent) VALUES (" +
-				Math.floor(Math.random() * 100) + ", " +
-				"'" + this.messages[i] + "', ";
 			
 			if((Math.floor(Math.random() * 10) % 10) === 0) {
-				div.innerHTML = "NULL," + div.innerHTML + Math.floor(Math.random() * 10) + ", ";
+				div.innerHTML = "<span>INSERT INTO MESSAGES (msgID, fromID, message, toGroupID, dateSent) VALUES (" +
+					i + ", " +
+					Math.floor(Math.random() * 100) + ", " +
+					"'" + this.messages[i] + "', " +
+					Math.floor(Math.random() * 10) + ", ";
 			}
 			else {
-				div.innerHTML = div.innerHTML + Math.floor(Math.random() * 100) + ", NULL, ";
+				div.innerHTML = "<span>INSERT INTO MESSAGES (msgID, fromID, message, toUserID, dateSent) VALUES (" +
+					i + ", " +
+					Math.floor(Math.random() * 100) + ", " +
+					"'" + this.messages[i] + "', " +
+					Math.floor(Math.random() * 100) + ", ";
 			}
 			
-			div.innerHTML = div.innerHTML + dateString + "');</span>";
+			div.innerHTML = div.innerHTML + dateString + ");</span>";
 			visualOutput.append(div);
 		}
 		appendBR();
