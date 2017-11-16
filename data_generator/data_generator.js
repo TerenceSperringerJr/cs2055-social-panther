@@ -22,7 +22,7 @@ $(document).ready(function() {
 		fantasyGroupGeneratorAPI = 'http://5e.d20srd.org/name/rpc.cgi?type=Party',
 		quotesAPI = 'https://got-quotes.herokuapp.com/quotes',
 		userCount = 100,
-		friendships = 200,
+		//friendships = 200,
 		groupCount = 10,
 		messageCount = 300,
 		visualOutput = $("#output")[0];
@@ -30,6 +30,7 @@ $(document).ready(function() {
 	function DataGenerator() {
 		this.messages = [];
 		this.users;
+		this.friends = [];
 		this.groups;
 		
 		return;
@@ -39,6 +40,8 @@ $(document).ready(function() {
 		if((this.messages.length < messageCount) || (this.users.length < userCount)) {
 			return;
 		}
+		
+		this.makeFriends();
 		
 		this.createSQL();
 		
@@ -62,7 +65,7 @@ $(document).ready(function() {
 				url: quotesAPI,
 				dataType: 'json',
 				success: function(result, status, xhr) {
-					DATA_GENERATOR.messages.push(result.quote + ' -' + result.character);
+					DATA_GENERATOR.messages.push(result.quote.replace(/[']/g, "''"));
 					DATA_GENERATOR.processData();
 					
 					return;
@@ -87,6 +90,36 @@ $(document).ready(function() {
 				return;
 			}
 		});
+		
+		return;
+	}
+	
+	function getRandomFriend(userID) {
+		var friendID = userID;
+		
+		while(friendID === userID) {
+			friendID = Math.floor(Math.random() * 100);
+		}
+		
+		return friendID;
+	}
+	
+	DataGenerator.prototype.makeFriends = function() {
+		var i,
+			friendID,
+			friend2ID;
+		
+		for(i = 0; i < this.users.length; i++) {
+			friendID = getRandomFriend(i);
+			this.friends.push({userID: i, friendID: friendID});
+			
+			friend2ID = friendID;
+			while(friend2ID === friendID) {
+				friend2ID = getRandomFriend(i);
+			}
+			
+			this.friends.push({userID: i, friendID: friend2ID});
+		}
 		
 		return;
 	}
@@ -125,6 +158,8 @@ $(document).ready(function() {
 	
 	DataGenerator.prototype.createSQL = function() {
 		var i,
+			date = new Date(),
+			dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
 			div = document.createElement("div");
 		
 		div.innerHTML = "<strong>--INSERT USERS:</strong>";
@@ -144,12 +179,16 @@ $(document).ready(function() {
 		
 		div.innerHTML = "<strong>--INSERT FRIENDSHIPS:</strong>";
 		visualOutput.append(div);
-		for(i = 0; i < this.users.length; i++) {
+		for(i = 0; i < this.friends.length; i++) {
 			div = document.createElement("div");
 			div.innerHTML = "<span>INSERT INTO FRIENDS (userID1, userID2, JDate, message) VALUES (" +
-				"'" + this.users[i].name.title + ' ' + this.users[i].name.first + ' ' + this.users[i].name.last + "', " +
-				"'" + this.users[i].email + "', " +
-				"'" + this.users[i].dob + "');</span>";
+				this.friends[i].userID + ", " +
+				this.friends[i].friendID + ", " +
+				"'" + dateString + "', " +
+				"'Hello, " + this.users[this.friends[i].friendID].name.title +
+				' ' + this.users[this.friends[i].friendID].name.first +
+				' ' + this.users[this.friends[i].friendID].name.last +
+				". Please accept my friendship.');</span>";
 			visualOutput.append(div);
 		}
 		appendBR();
@@ -159,17 +198,17 @@ $(document).ready(function() {
 		for(i = 0; i < this.messages.length; i++) {
 			div = document.createElement("div");
 			div.innerHTML = "<span>INSERT INTO MESSAGES (fromID, message, toUserID, toGroupID, dateSent) VALUES (" +
-				Math.floor(Math.random() * 100) + "," +
-				"'" + this.messages[i] + "',";
+				Math.floor(Math.random() * 100) + ", " +
+				"'" + this.messages[i] + "', ";
 			
 			if((Math.floor(Math.random() * 10) % 10) === 0) {
-				div.innerHTML = "NULL," + div.innerHTML + Math.floor(Math.random() * 10) + ",";
+				div.innerHTML = "NULL," + div.innerHTML + Math.floor(Math.random() * 10) + ", ";
 			}
 			else {
-				div.innerHTML = div.innerHTML + Math.floor(Math.random() * 100) + ", NULL,";
+				div.innerHTML = div.innerHTML + Math.floor(Math.random() * 100) + ", NULL, ";
 			}
 			
-			div.innerHTML = div.innerHTML + new Date() + "');</span>";
+			div.innerHTML = div.innerHTML + dateString + "');</span>";
 			visualOutput.append(div);
 		}
 		appendBR();
