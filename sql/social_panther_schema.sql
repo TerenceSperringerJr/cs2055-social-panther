@@ -46,11 +46,11 @@ CREATE TABLE FRIENDS(
 CREATE TABLE PENDING_FRIENDS(
 	fromID  varchar2(20) NOT NULL,
 	toID    varchar2(20) NOT NULL,
-	message varchar2(200),
+	message varchar2(200) DEFAULT 'I would like to befriend you.',
 		CONSTRAINT PENDING_FRIENDS_FK1 FOREIGN KEY (fromID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_FRIENDS_FK2 FOREIGN KEY (toID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: message should probably default to something like "I would like to befriend you."
+--notes:
 
 
 --messages (msgID, fromID, message, toUserID, toGroupID, dateSent)
@@ -87,7 +87,7 @@ CREATE TABLE GROUPS(
 	description varchar2(200),
 		CONSTRAINT GROUPS_PK PRIMARY KEY (gID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: TODO! After a group is created, the creator should probably be added to GROUP_MEMBERSHIP
+--notes: GROUPS are assumed to exist independently as it is possible for all members to leave them
 
 
 --groupMembership (gID, userID, role)
