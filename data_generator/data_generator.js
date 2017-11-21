@@ -109,7 +109,7 @@ $(document).ready(function() {
 		var friendID = userID;
 		
 		while(friendID === userID) {
-			friendID = Math.floor(Math.random() * 100);
+			friendID = Math.floor(Math.random() * 100) + 1;
 		}
 		
 		return friendID;
@@ -122,14 +122,14 @@ $(document).ready(function() {
 		
 		for(i = 0; i < this.users.length; i++) {
 			friendID = getRandomFriend(i);
-			this.friends.push({userID: i, friendID: friendID});
+			this.friends.push({userID: (i + 1), friendID: friendID});
 			
 			friend2ID = friendID;
 			while(friend2ID === friendID) {
-				friend2ID = getRandomFriend(i);
+				friend2ID = getRandomFriend(i + 1);
 			}
 			
-			this.friends.push({userID: i, friendID: friend2ID});
+			this.friends.push({userID: (i + 1), friendID: friend2ID});
 		}
 		
 		return;
@@ -165,11 +165,14 @@ $(document).ready(function() {
 	
 	function appendBR() {
 		visualOutput.append(document.createElement("br"));
+		
 		return;
 	}
 	
 	DataGenerator.prototype.createSQL = function() {
 		var i,
+			friendshipID,
+			senderID,
 			date = new Date(),
 			dateString = "TO_DATE('" +
 				date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " +
@@ -181,7 +184,7 @@ $(document).ready(function() {
 		for(i = 0; i < this.users.length; i++) {
 			div = document.createElement("div");
 			div.innerHTML = "<span>INSERT INTO PROFILE (userID, name, email, password, date_of_birth) VALUES (" +
-				i + ", " +
+				(i + 1) + ", " +
 				"'" + this.users[i].name.first + ' ' + this.users[i].name.last + "', " +
 				"'" + this.users[i].email + "'," +
 				"'" + this.users[i].login.password + "', " +
@@ -199,9 +202,9 @@ $(document).ready(function() {
 				this.friends[i].userID + ", " +
 				this.friends[i].friendID + ", " +
 				dateString + ", " +
-				"'Hello, " + this.users[this.friends[i].friendID].name.title +
-				' ' + this.users[this.friends[i].friendID].name.first +
-				' ' + this.users[this.friends[i].friendID].name.last +
+				"'Hello, " + this.users[this.friends[i].friendID - 1].name.title +
+				' ' + this.users[this.friends[i].friendID - 1].name.first +
+				' ' + this.users[this.friends[i].friendID - 1].name.last +
 				". Please accept my friendship.');</span>";
 			visualOutput.append(div);
 		}
@@ -212,20 +215,22 @@ $(document).ready(function() {
 		visualOutput.append(div);
 		for(i = 0; i < this.messages.length; i++) {
 			div = document.createElement("div");
+			friendshipID = Math.floor(Math.random() * this.friends.length);
+			senderID = this.friends[friendshipID].userID;
 			
 			if((Math.floor(Math.random() * 10) % 10) === 0) {
 				div.innerHTML = "<span>INSERT INTO MESSAGES (msgID, fromID, message, toGroupID, dateSent) VALUES (" +
-					i + ", " +
-					Math.floor(Math.random() * 100) + ", " +
+					(i + 1) + ", " +
+					senderID + ", " +
 					"'" + this.messages[i] + "', " +
-					Math.floor(Math.random() * 10) + ", ";
+					(Math.floor(Math.random() * 10) + 1) + ", ";
 			}
 			else {
 				div.innerHTML = "<span>INSERT INTO MESSAGES (msgID, fromID, message, toUserID, dateSent) VALUES (" +
-					i + ", " +
-					Math.floor(Math.random() * 100) + ", " +
+					(i + 1) + ", " +
+					senderID + ", " +
 					"'" + this.messages[i] + "', " +
-					Math.floor(Math.random() * 100) + ", ";
+					this.friends[friendshipID].friendID + ", ";
 			}
 			
 			div.innerHTML = div.innerHTML + dateString + ");</span>";
