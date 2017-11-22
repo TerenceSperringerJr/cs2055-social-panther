@@ -58,35 +58,6 @@ CREATE TABLE PENDING_FRIENDS(
 --notes:
 
 
---messages (msgID, fromID, message, toUserID, toGroupID, dateSent)
---Stores every message sent by users in the system. Note that the default values of ToUserID and ToGroupID should be NULL.
-CREATE TABLE MESSAGES(
-	msgID     varchar2(20) NOT NULL,
-	fromID    varchar2(20) NOT NULL,
-	message   varchar2(200),
-	toUserID  varchar2(20) default NULL,
-	toGroupID varchar2(20) default NULL,
-	dateSent  date,
-                CONSTRAINT CHECK(fromID<>toUserID),
-		CONSTRAINT MESSAGES_PK PRIMARY KEY (msgID) INITIALLY IMMEDIATE DEFERRABLE,
-		CONSTRAINT MESSAGES_FK1 FOREIGN KEY (fromID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
-                CONSTRAINT MESSAGES_FK2 FOREIGN KEY (GroupID) REFERENCES groups(GID) INITIALLY IMMEDIATE DEFERRABLE
-);
-
---notes: TODO! create trigger so that either toUserID or toGroupID is populated after create
-
-
---messageRecipient (msgID, userID)
---Stores the recipients of each message stored in the system.
-CREATE TABLE MESSAGE_RECIPIENT(
-	msgID  varchar2(20) NOT NULL,
-	userID varchar2(20) NOT NULL,
-		CONSTRAINT MESSAGE_RECIPIENT_PK PRIMARY KEY (msgID)  INITIALLY IMMEDIATE DEFERRABLE,
-		CONSTRAINT MESSAGE_RECIPIENT_FK2 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
-);
---notes: 
-
-
 --groups (gID, name, description)
 --Stores information for each group in the system.
 CREATE TABLE GROUPS(
@@ -98,12 +69,40 @@ CREATE TABLE GROUPS(
 --notes: GROUPS are assumed to exist independently as it is possible for all members to leave them
 
 
+--messages (msgID, fromID, message, toUserID, toGroupID, dateSent)
+--Stores every message sent by users in the system. Note that the default values of ToUserID and ToGroupID should be NULL.
+CREATE TABLE MESSAGES(
+	msgID     varchar2(20) NOT NULL,
+	fromID    varchar2(20) NOT NULL,
+	message   varchar2(200),
+	toUserID  varchar2(20) default NULL,
+	toGroupID varchar2(20) default NULL,
+	dateSent  date,
+		CONSTRAINT MESSAGES_PK PRIMARY KEY (msgID) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT MESSAGES_FK1 FOREIGN KEY (fromID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT MESSAGES_FK2 FOREIGN KEY (toGroupID) REFERENCES GROUPS(gID) INITIALLY IMMEDIATE DEFERRABLE
+);
+--notes: TODO! create trigger so that either toUserID or toGroupID is populated after create
+--CONSTRAINT CHECK(fromID <> toUserID),
+
+--messageRecipient (msgID, userID)
+--Stores the recipients of each message stored in the system.
+CREATE TABLE MESSAGE_RECIPIENT(
+	msgID  varchar2(20) NOT NULL,
+	userID varchar2(20) NOT NULL,
+		CONSTRAINT MESSAGE_RECIPIENT_PK PRIMARY KEY (msgID)  INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT MESSAGE_RECIPIENT_FK1 FOREIGN KEY (msgID) REFERENCES MESSAGES(msgID) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT MESSAGE_RECIPIENT_FK2 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
+);
+--notes: 
+
+
 --groupMembership (gID, userID, role)
 --Stores the users who are members of each group in the system.The 'role' indicate whether a user is a manager of a group (who can accept joining group request) or not.
 CREATE TABLE GROUP_MEMBERSHIP(
 	gID    varchar2(20) NOT NULL,
 	userID varchar2(20) NOT NULL,
-	role   varchar2(20) deferrable,
+	role   varchar2(20),
 		CONSTRAINT GROUP_MEMBERSHIP_PK PRIMARY KEY (gID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT GROUP_MEMBERSHIP_FK1 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
