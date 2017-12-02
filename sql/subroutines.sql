@@ -186,11 +186,11 @@ END SEND_MESSAGE_TO_USER;
 -- With this the user can send a message to a recipient group, if the user is within the group.
 -- Every member of this group should receive the message.
 -- The user should be prompted to enter the text of the message, which could be multi-lined.
--- Then the created new message should be \sent" to the user by adding appropriate entries into the MESSAGES and MESSAGE_RECIPIENT relations by creating a trigger.
+-- Then the created new message should be \sent" to the user by adding appropriate entries into the messages and messageRecipients relations by creating a trigger.
 -- The user should lastly be shown success or failure feedback.
 -- Note that if the user sends a message to one friend, you only need to put the friend's userID to ToUserID in the table of messages.
 -- If the user wants to send a message to a group, you need to put the group ID to ToGroupID in the table of messages
--- and use a trigger to populate the MESSAGE_RECIPIENT table with proper user ID information as defined by the groupMembership relation.
+-- and use a trigger to populate the messageRecipient table with proper user ID information as defined by the groupMembership relation.
 create or replace procedure
 SEND_MESSAGE_TO_GROUP(GROUP_ID IN VARCHAR2, MESSAGE IN VARCHAR2)
 IS
