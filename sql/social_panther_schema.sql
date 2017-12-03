@@ -23,7 +23,6 @@ CREATE TABLE PROFILE(
 	password      varchar2(50) NOT NULL,
 	date_of_birth date,
 	lastlogin     timestamp,
-                CONSTRAINT PROFILE_C CHECK (userID>0),
 		CONSTRAINT PROFILE_PK PRIMARY KEY (userID) INITIALLY IMMEDIATE DEFERRABLE
 );
 

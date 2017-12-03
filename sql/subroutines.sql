@@ -5,24 +5,20 @@
 
 -- Given a name, email address, and date of birth, add a new user to the system by inserting as new entry in the profile relation.
 create or replace function
-CREATE_USER(USERNAME IN VARCHAR2, USER_EMAIL IN VARCHAR2, USER_DATE_OF_BIRTH IN DATE)
-	return VARCHAR2
+CREATE_USER(USERNAME IN varchar2, USER_EMAIL IN varchar2, USER_DATE_OF_BIRTH IN date)
+	return varchar2
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'RESULT: ';
-	ENTRY_ID INTEGER := -1;
-	USER_PASSWORD VARCHAR2 (50);
-	USER_ID VARCHAR2 (20);
+	ENTRY_ID integer := -1;
+	USER_PASSWORD varchar2 (50);
+	USER_ID varchar2 (20);
 begin
-	SELECT COUNT(USERID) INTO ENTRY_ID FROM PROFILE;
+	select COUNT(USERID) INTO ENTRY_ID FROM PROFILE;
 	ENTRY_ID := ENTRY_ID + 1;
 	USER_ID := USERNAME || ENTRY_ID;
 	USER_PASSWORD := USER_ID;
 	
 	INSERT INTO PROFILE(USERID, NAME, EMAIL, PASSWORD, DATE_OF_BIRTH)
 		VALUES(USER_ID, USERNAME, USER_EMAIL, USER_PASSWORD, USER_DATE_OF_BIRTH);
-	
-	OUTPUT_STRING := OUTPUT_STRING || SQL%ROWCOUNT;
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 	
 	return USER_ID;
 END CREATE_USER;
@@ -31,22 +27,38 @@ END CREATE_USER;
 
 -- Given userID and password, login as the user in the system when an appropriate match is found.
 create or replace function
-LOGIN(USER_ID IN VARCHAR2, USER_PASSWORD IN VARCHAR2)
-	return TIMESTAMP
+LOGIN(USER_ID IN varchar2, USER_PASSWORD IN varchar2)
+	return boolean
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'RESULT: ';
-	LOGIN_TIME TIMESTAMP;
+	login_matches integer := 0;
 begin
-	UPDATE PROFILE SET LASTLOGIN = CURRENT_TIMESTAMP
-		WHERE USERID = USER_ID AND PASSWORD = USER_PASSWORD;
+	select count(USERID) into login_matches from PROFILE
+		where (USERID = USER_ID) and (PASSWORD = USER_PASSWORD);
 	
-	SELECT LASTLOGIN INTO LOGIN_TIME FROM PROFILE WHERE USERID = USER_ID;
+	if login_matches = 0 then
+		return false;
+	end if;
 	
-	OUTPUT_STRING := OUTPUT_STRING || SQL%ROWCOUNT;
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
-	
-	return LOGIN_TIME;
+	return true;
 END LOGIN;
+/
+
+
+-- This option should cleanly shut down and exit the program after marking the time of the user's logout in the profile relation
+create or replace function
+LOG_OUT(USER_ID in varchar2)
+	return timestamp
+IS
+	UPDATED timestamp;
+begin
+	update PROFILE
+		set LASTLOGIN = CURRENT_TIMESTAMP
+		where USERID = USER_ID;
+	
+	select LASTLOGIN into UPDATED from PROFILE where USERID = USER_ID;
+	
+	return UPDATED;
+END LOG_OUT;
 /
 
 
@@ -55,17 +67,19 @@ END LOGIN;
 -- Note: messages require special handling because they are owned by both sender and receiver.
 -- Therefore, a message is deleted only when both he sender and all receivers are deleted.
 -- Attention should be paid handling integrity constraints.
-create or replace procedure
+create or replace function
 DROP_USER(USER_ID in varchar2)
+	return boolean
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'RESULT: ';
 begin
 	delete from PROFILE where USERID = USER_ID;
 	--write trigger to handle all information owned solely by user on delete
 	
-	OUTPUT_STRING := OUTPUT_STRING || SQL%ROWCOUNT;
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	if SQL%ROWCOUNT = 1 then
+		return true;
+	end if;
 	
+	return false;
 END DROP_USER;
 /
 
@@ -74,7 +88,7 @@ END DROP_USER;
 create or replace procedure
 THREE_DEGREES(USER_A in varchar2, USER_B in varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'RESULT: ';
+	OUTPUT_STRING varchar2 (255) := 'RESULT: ';
 begin
 	--Test Direct Friendship
 	
@@ -88,18 +102,6 @@ END THREE_DEGREES;
 /
 
 
--- This option should cleanly shut down and exit the program after marking the time of the user's logout in the profile relation
-create or replace procedure
-LOG_OUT
-IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
-begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
-END LOG_OUT;
-/
-
-
-
 /* --------------------------------------- */
 /* THIS STUFF NEEDS TO BE IN THE JAVA APP! */
 /* --------------------------------------- */
@@ -110,7 +112,7 @@ END LOG_OUT;
 create or replace procedure
 INITIATE_FRIENDSHIP(USER_ID in varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END INITIATE_FRIENDSHIP;
@@ -124,7 +126,7 @@ END INITIATE_FRIENDSHIP;
 create or replace procedure
 CONFIRM_FRIENDSHIP
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END CONFIRM_FRIENDSHIP;
@@ -139,7 +141,7 @@ END CONFIRM_FRIENDSHIP;
 create or replace procedure
 DISPLAY_FRIENDS
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END DISPLAY_FRIENDS;
@@ -148,9 +150,9 @@ END DISPLAY_FRIENDS;
 
 -- Given a name, description, and membership limit, add a new group to the system, add the user as its first member with the role manager.
 create or replace procedure
-CREATE_GROUP(NAME IN VARCHAR2, DESCRIPTION IN VARCHAR2, MEMBER_LIMIT IN INTEGER)
+CREATE_GROUP(NAME IN varchar2, DESCRIPTION IN varchar2, MEMBER_LIMIT IN integer)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END CREATE_GROUP;
@@ -160,9 +162,9 @@ END CREATE_GROUP;
 -- Given a user and a group, create a pending request of adding to group (if not violate the group's membership limit).
 -- The user should be prompted to enter a message to be sent along with the request and inserted in the pendingGroupmembers relation.
 create or replace procedure
-INITIATE_ADDING_GROUP(USER_ID IN VARCHAR2, GROUP_ID IN VARCHAR2)
+INITIATE_ADDING_GROUP(USER_ID IN varchar2, GROUP_ID IN varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END INITIATE_ADDING_GROUP;
@@ -174,9 +176,9 @@ END INITIATE_ADDING_GROUP;
 -- Once entered, the message should be \sent" to the user by adding appropriate entries into the messages and message Recipients relations by creating a trigger.
 -- The user should lastly be shown success or failure feedback.
 create or replace procedure
-SEND_MESSAGE_TO_USER(FRIEND_ID IN VARCHAR2)
+SEND_MESSAGE_TO_USER(FRIEND_ID IN varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END SEND_MESSAGE_TO_USER;
@@ -192,9 +194,9 @@ END SEND_MESSAGE_TO_USER;
 -- If the user wants to send a message to a group, you need to put the group ID to ToGroupID in the table of messages
 -- and use a trigger to populate the messageRecipient table with proper user ID information as defined by the groupMembership relation.
 create or replace procedure
-SEND_MESSAGE_TO_GROUP(GROUP_ID IN VARCHAR2, MESSAGE IN VARCHAR2)
+SEND_MESSAGE_TO_GROUP(GROUP_ID IN varchar2, MESSAGE IN varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END SEND_MESSAGE_TO_GROUP;
@@ -205,7 +207,7 @@ END SEND_MESSAGE_TO_GROUP;
 create or replace procedure
 DISPLAY_MESSAGES
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END DISPLAY_MESSAGES;
@@ -216,7 +218,7 @@ END DISPLAY_MESSAGES;
 create or replace procedure
 DISPLAY_NEW_MESSAGES
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END DISPLAY_NEW_MESSAGES;
@@ -226,11 +228,11 @@ END DISPLAY_NEW_MESSAGES;
 -- Given a string on which to match any user in the system, any item in this string must be matched against any significant field of a user's profile.
 -- That is if the user searches for \xyz abc", the results should be the set of all profiles that match \xyz" union the set of all profiles that matches \abc"
 create or replace procedure
-SEARCH_FOR_USER(SEARCH_STRING IN VARCHAR2)
+SEARCH_FOR_USER(SEARCH_STRING IN varchar2)
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	--SELECT * FROM PROFILE WHERE ;
+	--select * FROM PROFILE where ;
 	
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END SEARCH_FOR_USER;
@@ -241,10 +243,8 @@ END SEARCH_FOR_USER;
 create or replace procedure
 TOP_MESSAGES
 IS
-	OUTPUT_STRING VARCHAR2 (255) := 'IMPLEMENT ME!';
+	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
 	DBMS_OUTPUT.put_line(OUTPUT_STRING);
 END TOP_MESSAGES;
 /
-
-
