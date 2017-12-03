@@ -1,27 +1,83 @@
--- subroutine tests
--- tps23
+--Social@Panther
+--subroutine tests
+--tps23
 
--- tests that should always pass
+--Tests in this file will print errors upon failure
+
 declare
-	TEST_USERID VARCHAR2 (20);
-	TEST_NAME VARCHAR2 (50) := 'Sir Astral';
-	TEST_PASSWORD VARCHAR (50);
-	TEST_EMAIL VARCHAR2 (64) := 'astral@granseal.dom';
-	TEST_DOB DATE := '01-OCT-1993';
-	TEST_STAMP TIMESTAMP;
+	ALL_ERRORS integer := 0;
+	
+	-- General usage tests that should always pass and will print errors if they do not
+	function GENERAL_TEST
+		return integer
+	is
+		TEST_ERRORS integer := 0;
+		TEST_USERID VARCHAR2 (20);
+		TEST_NAME VARCHAR2 (50) := 'SirAstral';
+		TEST_PASSWORD VARCHAR2 (50);
+		TEST_EMAIL VARCHAR2 (64) := 'astral@granseal.dom';
+		TEST_DOB DATE := TO_DATE('01-OCT-1993');
+		TEST_LOGGED_IN boolean;
+		TEST_DELETED boolean;
+		TEST_LOGOUT_TIME timestamp;
+	begin
+		--CREATE_USER
+		TEST_USERID := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
+		TEST_PASSWORD := TEST_USERID;
+		
+		if TEST_USERID = NULL then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed CREATE_USER(' || TEST_NAME || ', ' || TEST_EMAIL || ', ' || TEST_DOB || ')');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		
+		--LOGIN
+		TEST_LOGGED_IN := LOGIN(TEST_USERID, TEST_PASSWORD);
+		
+		if TEST_LOGGED_IN = false then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed LOGIN(' || TEST_USERID || ', ' || TEST_PASSWORD || ')');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		else
+			--LOGOUT
+			TEST_LOGOUT_TIME := LOG_OUT(TEST_USERID);
+			
+			if TEST_LOGOUT_TIME = NULL then
+				DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed LOG_OUT(' || TEST_USERID || ')');
+				TEST_ERRORS := TEST_ERRORS + 1;
+			end if;
+		end if;
+		
+		
+		--DROP USER
+		TEST_DELETED := DROP_USER(TEST_USERID);
+		
+		if TEST_DELETED = false then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed DROP_USER(' || TEST_USERID || ')');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		return TEST_ERRORS;
+	end;
+
+--TODO: make REJECTION_TEST
+	--Rejection tests that should always fail (prints errors if they succeed)
+	function REJECTION_TEST
+		return integer
+	is
+		TEST_ERRORS integer := 0;
+	begin
+		return 0;
+	end;
+
 begin
-	TEST_USERID := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
-	TEST_PASSWORD := TEST_USERID;
-	TEST_STAMP := LOGIN(TEST_USERID, TEST_PASSWORD);
+	ALL_ERRORS := ALL_ERRORS + GENERAL_TEST();
+	ALL_ERRORS := ALL_ERRORS + REJECTION_TEST();
 	
-	
-	
--- Uncomment for explicit output
-DBMS_OUTPUT.put_line('REGISTERED PROFILE ID AS: ' || TEST_USERID);
-DBMS_OUTPUT.put_line('LOGIN TIME: ' || TEST_STAMP);
-	
-	DROP_USER(TEST_USERID);
+	--Print summary
+	if ALL_ERRORS > 0 then
+		DBMS_OUTPUT.put_line('All tests had '|| ALL_ERRORS ||' error(s)!!');
+	else
+		DBMS_OUTPUT.put_line('All tests passed with no errors =)');
+	end if;
 end;
 /
-
--- TODO: make tests that should always fail
