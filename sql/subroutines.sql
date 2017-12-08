@@ -102,17 +102,22 @@ IS
 	FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
 	OUTPUT_STRING varchar2 (255) := 'RESULT: ';
 begin
+	FRIENDSHIP.USER1 := null;
+	
 	--Check Direct Friendship
 	select USERID1, USERID2 into FRIENDSHIP.USER1, FRIENDSHIP.USER2 from FRIENDS
 		where (USERID1 = USER_A and USERID2 = USER_B) or (USERID1 = USER_B and USERID2 = USER_A);
 	
-	/*
-	if FRIENDSHIP.USER1 = null then
-	--Search for Friend in common
-	
-	--Search Friends who are Friends with Friend's Friends
-	end if;
-	*/
+	exception when NO_DATA_FOUND then
+		--Search for Friend in common
+		/*
+		select USER1_FRIENDS.USERID1, FRIENDS.USERID2 into FRIENDSHIP.USER1, FRIENDSHIP.USER1_FRIEND
+			from
+			innerjoin((select ) ON );
+		*/
+		
+		--Search Friends who are Friends with Friend's Friends
+		DBMS_OUTPUT.put_line('NO RELATIONSHIP FOUND!');
 	
 	return FRIENDSHIP;
 END THREE_DEGREES;
@@ -126,12 +131,18 @@ END THREE_DEGREES;
 -- Create a pending friendship from the (logged in) user to another user based on userID.
 -- The application should display the name of the person that will be sent a friends request and the user should be prompted to enter a message to be sent along with the request.
 -- A last confirmation should be requested of the user before an entry is inserted into the pendingFriends relation, and success or failure feedback is displayed for the user.
-create or replace procedure
-INITIATE_FRIENDSHIP(USER_ID in varchar2)
+create or replace function
+INITIATE_FRIENDSHIP(SENDER in varchar2, RECEIVER in varchar2, MESSAGE in varchar2)
+	return boolean
 IS
-	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
+	INITIATED boolean := true;
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	insert into PENDING_FRIENDS(FROMID, TOID, MESSAGE) values (SENDER, RECEIVER, MESSAGE);
+	
+	exception when PROGRAM_ERROR then
+		INITIATED := false;
+	
+	return INITIATED;
 END INITIATE_FRIENDSHIP;
 /
 
@@ -140,12 +151,21 @@ END INITIATE_FRIENDSHIP;
 -- Then, the user should be prompted for a number of the request he or she would like to confirm or given the option to confirm them all.
 -- The application should move the request from the appropriate pendingFriends or pendingGroupmembers relation to the friends or groupMembership relation.
 -- The remaining requests which were not selected are declined and removed from pendingFriends and pendingGroupmembers relations.
-create or replace procedure
-CONFIRM_FRIENDSHIP
+create or replace function
+CONFIRM_FRIENDSHIP(USERID in varchar2, REQUESTER in varchar2)
+	return boolean
 IS
-	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
+	REQUEST_MESSAGE varchar2(200);
+	CONFIRMED boolean := true;
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	select MESSAGE into REQUEST_MESSAGE from PENDING_FRIENDS where (FROMID = REQUESTER and TOID = USERID);
+	
+	insert into FRIENDS(USERID1, USERID2, JDATE, MESSAGE) values(REQUESTER, USERID, CURRENT_DATE, REQUEST_MESSAGE);
+	
+	exception when PROGRAM_ERROR then
+		CONFIRMED := false;
+	
+	return CONFIRMED;
 END CONFIRM_FRIENDSHIP;
 /
 

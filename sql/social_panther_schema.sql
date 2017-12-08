@@ -25,8 +25,7 @@ CREATE TABLE PROFILE(
 	lastlogin     timestamp,
 		CONSTRAINT PROFILE_PK PRIMARY KEY (userID) INITIALLY IMMEDIATE DEFERRABLE
 );
-
---notes: TODO! lastlogin will be updated by mechanism such as trigger/procedure
+--notes: lastlogin will be updated by LOG_OUT()
 
 
 --friends (userID1, userID2, JDate, message)
@@ -41,7 +40,10 @@ CREATE TABLE FRIENDS(
 		CONSTRAINT FRIENDS_FK1 FOREIGN KEY (userID1) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT FRIENDS_FK2 FOREIGN KEY (userID2) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: TODO! JDate should get the current date after a FRIENDS entry is created
+/*
+notes: JDate should get the current date after a FRIENDS entry is created
+	On insert removes row from PENDING_FRIENDS that matches userID1 and userID2
+*/
 
 
 --pendingFriends (fromID, toID, message)
@@ -63,6 +65,7 @@ CREATE TABLE GROUPS(
 	gID         varchar2(20) NOT NULL,
 	name        varchar2(50),
 	description varchar2(200),
+	member_limit integer,
 		CONSTRAINT GROUPS_PK PRIMARY KEY (gID) INITIALLY IMMEDIATE DEFERRABLE
 );
 --notes: GROUPS are assumed to exist independently as it is possible for all members to leave them
@@ -119,3 +122,20 @@ CREATE TABLE PENDING_GROUP_MEMBERS(
 		CONSTRAINT PENDING_GROUP_MEMBERS_FK2 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
 --notes: 
+
+
+--TRIGGERS
+--TODO! create trigger on insert to remove row from pending_friends that matches userID1 and userID2
+/*
+create or replace trigger BEFRIEND
+	after insert on FRIENDS
+begin
+	case when INSERTING then
+		delete from PENDING_FRIENDS where (FROMID = :NEW.USERID1 and TOID = :NEW.USERID2);
+	end case;
+	
+	exception when PROGRAM_ERROR then
+		rollback;
+end;
+*/
+/

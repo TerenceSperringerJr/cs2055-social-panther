@@ -44,18 +44,34 @@ declare
 		
 		--THREE_DEGREES no relationship
 		select USERID into TEST_FRIEND_ID from PROFILE where USERID = '1';
-		/*
 		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
 		
 		if TEST_FRIENDSHIP.USER1 <> null then
 			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false positive');
 			TEST_ERRORS := TEST_ERRORS + 1;
 		end if;
-		*/
 		
 		--make friends with TEST_FRIEND_ID
+		--INITIATE_FRIENDSHIP
+		if INITIATE_FRIENDSHIP(TEST_USERID, TEST_FRIEND_ID, 'Dead men tell no tales.') = false then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed INITIATE_FRIENDSHIP(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ', Dead men tell no tales.)');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		else
+			--CONFIRM_FRIENDSHIP
+			if CONFIRM_FRIENDSHIP(TEST_USERID, TEST_FRIEND_ID) = false then
+				DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed CONFIRM_FRIENDSHIP(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ')');
+				TEST_ERRORS := TEST_ERRORS + 1;
+			end if;
+		end if;
+		
 		
 		--THREE_DEGREES direct friendship
+		/*
+		if (TEST_FRIENDSHIP.USER1 = null) or (TEST.FRIENDSHIP_DEGREE.USER2 = null) then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false positive');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		*/
 		
 		--THREE_DEGREES common friend
 		
