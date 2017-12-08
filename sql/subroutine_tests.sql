@@ -13,6 +13,8 @@ declare
 	is
 		TEST_ERRORS integer := 0;
 		TEST_USERID VARCHAR2 (20);
+		TEST_FRIEND_ID varchar2 (20);
+		TEST_FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
 		TEST_NAME VARCHAR2 (50) := 'SirAstral';
 		TEST_PASSWORD VARCHAR2 (50);
 		TEST_EMAIL VARCHAR2 (64) := 'astral@granseal.dom';
@@ -37,8 +39,31 @@ declare
 		if TEST_LOGGED_IN = false then
 			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed LOGIN(' || TEST_USERID || ', ' || TEST_PASSWORD || ')');
 			TEST_ERRORS := TEST_ERRORS + 1;
-		else
-			--LOGOUT
+		end if;
+		
+		
+		--THREE_DEGREES no relationship
+		select USERID into TEST_FRIEND_ID from PROFILE where USERID = '1';
+		/*
+		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
+		
+		if TEST_FRIENDSHIP.USER1 <> null then
+			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false positive');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		*/
+		
+		--make friends with TEST_FRIEND_ID
+		
+		--THREE_DEGREES direct friendship
+		
+		--THREE_DEGREES common friend
+		
+		--THREE_DEGREES friends are friends
+		
+		
+		--LOGOUT
+		if TEST_LOGGED_IN = true then
 			TEST_LOGOUT_TIME := LOG_OUT(TEST_USERID);
 			
 			if TEST_LOGOUT_TIME = NULL then
@@ -46,7 +71,6 @@ declare
 				TEST_ERRORS := TEST_ERRORS + 1;
 			end if;
 		end if;
-		
 		
 		--DROP USER
 		TEST_DELETED := DROP_USER(TEST_USERID);

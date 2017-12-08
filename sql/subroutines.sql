@@ -2,6 +2,16 @@
 -- tps23
 -- Subroutines
 
+create or replace package SUBROUTINES AS
+	type FRIENDSHIP_DEGREE is record (
+		USER1 varchar2(20) default null,
+		USER1_FRIEND varchar2(20) default null,
+		USER2 varchar2(20) default null,
+		USER2_FRIEND varchar2(20) default null
+	);
+	
+end SUBROUTINES;
+/
 
 -- Given a name, email address, and date of birth, add a new user to the system by inserting as new entry in the profile relation.
 create or replace function
@@ -85,19 +95,26 @@ END DROP_USER;
 
 
 -- Given two users (A and B), find a path, if one exists, between A and B with at most 3 hop between them. A hop is defined as a friendship between any two users.
-create or replace procedure
+create or replace function
 THREE_DEGREES(USER_A in varchar2, USER_B in varchar2)
+	return SUBROUTINES.FRIENDSHIP_DEGREE
 IS
+	FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
 	OUTPUT_STRING varchar2 (255) := 'RESULT: ';
 begin
-	--Test Direct Friendship
+	--Check Direct Friendship
+	select USERID1, USERID2 into FRIENDSHIP.USER1, FRIENDSHIP.USER2 from FRIENDS
+		where (USERID1 = USER_A and USERID2 = USER_B) or (USERID1 = USER_B and USERID2 = USER_A);
 	
-	--Test Shared Friend(s)
+	/*
+	if FRIENDSHIP.USER1 = null then
+	--Search for Friend in common
 	
-	--Test Friends who are Friends with Friend's Friends
+	--Search Friends who are Friends with Friend's Friends
+	end if;
+	*/
 	
-	--OUTPUT_STRING || SQL%ROWCOUNT;
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	return FRIENDSHIP;
 END THREE_DEGREES;
 /
 
