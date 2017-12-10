@@ -14,7 +14,7 @@ public class DBUtil {
  
 	public static Connection getConn() {
 		String driver = "oracle.jdbc.driver.OracleDriver";
-		String url = "jdbc:oracle:thin:@class3.cs.pitt.edu:1521:dbclass";
+		String url = "jdbc:oracle:thin:@192.168.14.203:1526:database";
 		String username = "sis61"; 
 		String password = "4229544"; 
 
