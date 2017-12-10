@@ -37,7 +37,9 @@ public class SocialPantherClient {
 	private Statement statement; //used to create an instance of the connection
 	private ResultSet resultSet; //used to hold the result of your query (if one exists)
 	private String query; //this will hold the query we are using
-	private String username, password;
+	private String username;
+	private String password;
+	private boolean loggedin;
 	
 	public SocialPantherClient() {
 		openConnection();
@@ -120,7 +122,32 @@ public class SocialPantherClient {
 		return;
 	}
 	
-	public void openConnection() {
+	public void login() {
+		statement = connection.createStatement(); //create an instance
+		query = "SELECT * FROM Test"; //sample query one
+		
+		resultSet = statement.executeQuery(query); //run the query on the DB table
+		// the results in resultSet have an odd quality. The first row in result
+		// set is not relevant data, but rather a place holder. This enables us to
+		// use a while loop to go through all the records. We must move the pointer
+		// forward once using resultSet.next() or you will get errors
+		
+		while(resultSet.next()) //this not only keeps track of if another record exists but moves us forward to the first record
+		{
+			// since the first item was of type string, we use getString of the resultSet class to access it.
+			// Notice the one, that is the position of the answer in the resulting table since second item was number(10),
+			// we use getLong to access it since type date, getDate.
+			System.out.println("Record " + counter + ": " +
+				resultSet.getString(1) + ", " +
+				resultSet.getLong(2) + ", " +
+				resultSet.getDate(3));
+			counter++;
+		}
+		
+		return;
+	}
+	
+	private void openConnection() {
 		/*
 		Making a connection to a DB causes certain exceptions.
 		In order to handle these you either put the DB stuff in a try block,
