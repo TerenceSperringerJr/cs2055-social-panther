@@ -3,6 +3,7 @@
 --tps23
 
 --Tests in this file will print errors upon failure
+set serveroutput on;
 
 declare
 	ALL_ERRORS integer := 0;
@@ -70,6 +71,8 @@ declare
 		if TEST_FRIENDSHIP.USER1 = null then
 			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false negative on direct friendship');
 			TEST_ERRORS := TEST_ERRORS + 1;
+else
+dbms_output.put_line('[' || TEST_FRIENDSHIP.USER1 || ', ' || TEST_FRIENDSHIP.USER1_FRIEND || ', ' || TEST_FRIENDSHIP.USER2_FRIEND || ', ' || TEST_FRIENDSHIP.USER2 || ']');
 		end if;
 		
 		--THREE_DEGREES no relationship
@@ -79,6 +82,8 @@ declare
 		if TEST_FRIENDSHIP.USER1 <> null then
 			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false positive');
 			TEST_ERRORS := TEST_ERRORS + 1;
+else
+dbms_output.put_line('[' || TEST_FRIENDSHIP.USER1 || ', ' || TEST_FRIENDSHIP.USER1_FRIEND || ', ' || TEST_FRIENDSHIP.USER2_FRIEND || ', ' || TEST_FRIENDSHIP.USER2 || ']');
 		end if;
 		
 		--THREE_DEGREES common friend
@@ -88,7 +93,6 @@ declare
 		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID2, TEST_FRIEND_ID);
 		
 		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
-		delete from FRIENDS where USERID1 = TEST_FRIEND_ID and USERID2 = TEST_FRIEND_ID2;
 		
 		--TODO! THIS SHOULD FAIL RIGHT NOW!
 		if TEST_FRIENDSHIP.USER1 = null then
@@ -99,6 +103,7 @@ dbms_output.put_line('[' || TEST_FRIENDSHIP.USER1 || ', ' || TEST_FRIENDSHIP.USE
 		end if;
 		
 		--THREE_DEGREES friends are friends
+		delete from FRIENDS where USERID1 = TEST_FRIEND_ID and USERID2 = TEST_FRIEND_ID2;
 		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_FRIEND_ID, TEST_FRIEND_ID3, '...');
 		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID3, TEST_FRIEND_ID);
 		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_FRIEND_ID2, TEST_FRIEND_ID3, '...');
@@ -135,6 +140,9 @@ dbms_output.put_line('[' || TEST_FRIENDSHIP.USER1 || ', ' || TEST_FRIENDSHIP.USE
 		end if;
 		
 		return TEST_ERRORS;
+	exception
+		when others then
+			raise;
 	end;
 
 --TODO: make REJECTION_TEST

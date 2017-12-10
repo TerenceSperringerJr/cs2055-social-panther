@@ -102,6 +102,7 @@ THREE_DEGREES(USER_A in varchar2, USER_B in varchar2)
 	return SUBROUTINES.FRIENDSHIP_DEGREE
 IS
 	FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
+	RELATION_FOUND boolean := true;
 begin
 	begin
 		--Check Direct Friendship
@@ -109,15 +110,17 @@ begin
 			where (USERID1 = USER_A and USERID2 = USER_B) or (USERID1 = USER_B and USERID2 = USER_A);
 	exception
 		when NO_DATA_FOUND then
+			RELATION_FOUND := false;
 			FRIENDSHIP.USER1 := null;
 	end;
 	
-	if FRIENDSHIP.USER1 <> null then
+	if RELATION_FOUND then
 		return FRIENDSHIP;
 	end if;
 	
-	/*
+	RELATION_FOUND := true;
 	begin
+		--TODO! This is broken and doesn't work.
 		--Search for Friend in common
 		select * into RELATIONSHIP
 			from
