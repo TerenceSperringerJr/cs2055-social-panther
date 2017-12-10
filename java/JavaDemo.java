@@ -38,8 +38,8 @@ public class JavaDemo
     these, you either put the DB stuff in a try block or have your function
     throw the Execptions and handle them later.  For this demo I will use the
     try blocks*/
-    username = "your_pittID"; //This is your username in oracle
-    password = "yourPeopleSoftNum"; //This is your password in oracle
+    username = "pitt01"; //This is your username in oracle
+    password = "password"; //This is your password in oracle
     try{
       //Register the oracle driver.  This needs the oracle files provided
       //in the oracle.zip file, unzipped into the local directory and 
@@ -144,7 +144,11 @@ public class JavaDemo
 
     System.out.println("Good Luck");
   }
-
+  public void readConfig() {
+	//open config.txt
+	//read the name and the password
+	//store the name and password in this.username and this.password
+  } 
   public static void main(String args[])
   {
     JavaDemo demo = new JavaDemo();
