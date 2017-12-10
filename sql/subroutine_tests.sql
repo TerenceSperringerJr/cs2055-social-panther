@@ -13,20 +13,28 @@ declare
 	is
 		TEST_ERRORS integer := 0;
 		TEST_USERID VARCHAR2 (20);
+		TEST_FRIEND_ID varchar2 (20);
+		TEST_FRIEND_ID2 varchar2 (20);
+		TEST_FRIEND_ID3 varchar2 (20);
+		TEST_FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
 		TEST_NAME VARCHAR2 (50) := 'SirAstral';
 		TEST_PASSWORD VARCHAR2 (50);
 		TEST_EMAIL VARCHAR2 (64) := 'astral@granseal.dom';
 		TEST_DOB DATE := TO_DATE('01-OCT-1993');
 		TEST_LOGGED_IN boolean;
-		TEST_DELETED boolean;
+		TEST_BOOL_RESULT boolean;
 		TEST_LOGOUT_TIME timestamp;
 	begin
 		--CREATE_USER
 		TEST_USERID := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
 		TEST_PASSWORD := TEST_USERID;
 		
+		TEST_FRIEND_ID := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
+		TEST_FRIEND_ID2 := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
+		TEST_FRIEND_ID3 := CREATE_USER(TEST_NAME, TEST_EMAIL, TEST_DOB);
+		
 		if TEST_USERID = NULL then
-			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed CREATE_USER(' || TEST_NAME || ', ' || TEST_EMAIL || ', ' || TEST_DOB || ')');
+			dbms_output.put_line('Error: GENERAL_TEST Failed CREATE_USER(' || TEST_NAME || ', ' || TEST_EMAIL || ', ' || TEST_DOB || ')');
 			TEST_ERRORS := TEST_ERRORS + 1;
 		end if;
 		
@@ -35,24 +43,94 @@ declare
 		TEST_LOGGED_IN := LOGIN(TEST_USERID, TEST_PASSWORD);
 		
 		if TEST_LOGGED_IN = false then
-			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed LOGIN(' || TEST_USERID || ', ' || TEST_PASSWORD || ')');
+			dbms_output.put_line('Error: GENERAL_TEST Failed LOGIN(' || TEST_USERID || ', ' || TEST_PASSWORD || ')');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		
+		--make friends with TEST_FRIEND_ID
+		--INITIATE_FRIENDSHIP
+		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_USERID, TEST_FRIEND_ID, 'Dead men tell no tales.');
+		
+		if TEST_BOOL_RESULT = false then
+			dbms_output.put_line('Error: GENERAL_TEST Failed INITIATE_FRIENDSHIP(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ', Dead men tell no tales.)');
 			TEST_ERRORS := TEST_ERRORS + 1;
 		else
-			--LOGOUT
+			--CONFIRM_FRIENDSHIP
+			TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID, TEST_USERID);
+			if TEST_BOOL_RESULT = false then
+				dbms_output.put_line('Error: GENERAL_TEST Failed CONFIRM_FRIENDSHIP(' || TEST_FRIEND_ID || ', ' || TEST_USERID || ')');
+				TEST_ERRORS := TEST_ERRORS + 1;
+			end if;
+		end if;
+		
+		--THREE_DEGREES direct friendship
+		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
+		
+		if TEST_FRIENDSHIP.USER1 = null then
+			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false negative on direct friendship');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		--THREE_DEGREES no relationship
+		delete from FRIENDS where (USERID1 = TEST_USERID and USERID2 = TEST_FRIEND_ID);
+		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
+		
+		if TEST_FRIENDSHIP.USER1 <> null then
+			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false positive');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		--THREE_DEGREES common friend
+		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_USERID, TEST_FRIEND_ID2, '...');
+		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID2, TEST_USERID);
+		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_FRIEND_ID, TEST_FRIEND_ID2, '...');
+		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID2, TEST_FRIEND_ID);
+		
+		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
+		delete from FRIENDS where USERID1 = TEST_FRIEND_ID and USERID2 = TEST_FRIEND_ID2;
+		
+		--TODO! THIS SHOULD FAIL RIGHT NOW!
+		if TEST_FRIENDSHIP.USER1 = null then
+			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false negative on 2nd degree friendship');
+			TEST_ERRORS := TEST_ERRORS + 1;
+else
+dbms_output.put_line('[' || TEST_FRIENDSHIP.USER1 || ', ' || TEST_FRIENDSHIP.USER1_FRIEND || ', ' || TEST_FRIENDSHIP.USER2_FRIEND || ', ' || TEST_FRIENDSHIP.USER2 || ']');
+		end if;
+		
+		--THREE_DEGREES friends are friends
+		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_FRIEND_ID, TEST_FRIEND_ID3, '...');
+		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID3, TEST_FRIEND_ID);
+		TEST_BOOL_RESULT := INITIATE_FRIENDSHIP(TEST_FRIEND_ID2, TEST_FRIEND_ID3, '...');
+		TEST_BOOL_RESULT := CONFIRM_FRIENDSHIP(TEST_FRIEND_ID3, TEST_FRIEND_ID2);
+		
+		TEST_FRIENDSHIP := THREE_DEGREES(TEST_USERID, TEST_FRIEND_ID);
+		delete from FRIENDS where (USERID1 = TEST_FRIEND_ID or USERID2 = TEST_FRIEND_ID);
+		delete from FRIENDS where (USERID1 = TEST_FRIEND_ID2 or USERID2 = TEST_FRIEND_ID2);
+		delete from FRIENDS where (USERID1 = TEST_FRIEND_ID3 or USERID2 = TEST_FRIEND_ID3);
+		
+		--TODO! THIS SHOULD FAIL RIGHT NOW!
+		if ((TEST_FRIENDSHIP.USER1 = null) or (TEST_FRIENDSHIP.USER2 = null) or (TEST_FRIENDSHIP.USER1_FRIEND = null) or (TEST_FRIENDSHIP.USER2_FRIEND = null)) then
+			dbms_output.put_line('Error: GENERAL_TEST Failed THREE_DEGREES(' || TEST_USERID || ', ' || TEST_FRIEND_ID || ') for false negative on 2nd degree friendship');
+			TEST_ERRORS := TEST_ERRORS + 1;
+		end if;
+		
+		--LOGOUT
+		if TEST_LOGGED_IN = true then
 			TEST_LOGOUT_TIME := LOG_OUT(TEST_USERID);
 			
 			if TEST_LOGOUT_TIME = NULL then
-				DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed LOG_OUT(' || TEST_USERID || ')');
+				dbms_output.put_line('Error: GENERAL_TEST Failed LOG_OUT(' || TEST_USERID || ')');
 				TEST_ERRORS := TEST_ERRORS + 1;
 			end if;
 		end if;
 		
 		
 		--DROP USER
-		TEST_DELETED := DROP_USER(TEST_USERID);
+		TEST_BOOL_RESULT := DROP_USER(TEST_USERID);
 		
-		if TEST_DELETED = false then
-			DBMS_OUTPUT.put_line('Error: GENERAL_TEST Failed DROP_USER(' || TEST_USERID || ')');
+		if TEST_BOOL_RESULT = false then
+			dbms_output.put_line('Error: GENERAL_TEST Failed DROP_USER(' || TEST_USERID || ')');
 			TEST_ERRORS := TEST_ERRORS + 1;
 		end if;
 		
@@ -70,14 +148,18 @@ declare
 	end;
 
 begin
+	savepoint PRETEST;
+	
 	ALL_ERRORS := ALL_ERRORS + GENERAL_TEST();
 	ALL_ERRORS := ALL_ERRORS + REJECTION_TEST();
 	
 	--Print summary
 	if ALL_ERRORS > 0 then
-		DBMS_OUTPUT.put_line('All tests had '|| ALL_ERRORS ||' error(s)!!');
+		dbms_output.put_line('All tests had '|| ALL_ERRORS ||' error(s)!!');
 	else
-		DBMS_OUTPUT.put_line('All tests passed with no errors =)');
+		dbms_output.put_line('All tests passed with no errors =)');
 	end if;
+	
+	rollback to PRETEST;
 end;
 /

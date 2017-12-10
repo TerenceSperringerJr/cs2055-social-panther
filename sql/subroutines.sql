@@ -2,6 +2,16 @@
 -- tps23
 -- Subroutines
 
+create or replace package SUBROUTINES AS
+	type FRIENDSHIP_DEGREE is record (
+		USER1 varchar2(20) default null,
+		USER1_FRIEND varchar2(20) default null,
+		USER2 varchar2(20) default null,
+		USER2_FRIEND varchar2(20) default null
+	);
+	
+end SUBROUTINES;
+/
 
 -- Given a name, email address, and date of birth, add a new user to the system by inserting as new entry in the profile relation.
 create or replace function
@@ -21,6 +31,9 @@ begin
 		VALUES(USER_ID, USERNAME, USER_EMAIL, USER_PASSWORD, USER_DATE_OF_BIRTH);
 	
 	return USER_ID;
+exception
+	when OTHERS then
+		return null;
 END CREATE_USER;
 /
 
@@ -75,29 +88,60 @@ begin
 	delete from PROFILE where USERID = USER_ID;
 	--write trigger to handle all information owned solely by user on delete
 	
-	if SQL%ROWCOUNT = 1 then
-		return true;
-	end if;
-	
-	return false;
+	return true;
+exception
+	when others then
+		return false;
 END DROP_USER;
 /
 
 
 -- Given two users (A and B), find a path, if one exists, between A and B with at most 3 hop between them. A hop is defined as a friendship between any two users.
-create or replace procedure
+create or replace function
 THREE_DEGREES(USER_A in varchar2, USER_B in varchar2)
+	return SUBROUTINES.FRIENDSHIP_DEGREE
 IS
-	OUTPUT_STRING varchar2 (255) := 'RESULT: ';
+	FRIENDSHIP SUBROUTINES.FRIENDSHIP_DEGREE;
 begin
-	--Test Direct Friendship
+	begin
+		--Check Direct Friendship
+		select USERID1, USERID2 into FRIENDSHIP.USER1, FRIENDSHIP.USER2 from FRIENDS
+			where (USERID1 = USER_A and USERID2 = USER_B) or (USERID1 = USER_B and USERID2 = USER_A);
+	exception
+		when NO_DATA_FOUND then
+			FRIENDSHIP.USER1 := null;
+	end;
 	
-	--Test Shared Friend(s)
+	if FRIENDSHIP.USER1 <> null then
+		return FRIENDSHIP;
+	end if;
 	
-	--Test Friends who are Friends with Friend's Friends
+	/*
+	begin
+		--Search for Friend in common
+		select * into RELATIONSHIP
+			from
+				((select * from FRIENDS where (USERID1 = USER_A or USERID2 = USER_A) as A_FRIENDS)
+				inner join
+				(select * from FRIENDS where (USERID1 = USER_B or USERID2 = USER_B) as B_FRIENDS)
+					on A_FRIENDS.USERID2 = B_FRIENDS.USERID2);
+	exception
+		when NO_DATA_FOUND then
+			RELATIONSHIP.USERID1 := null;
+	end;
 	
-	--OUTPUT_STRING || SQL%ROWCOUNT;
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	if RELATIONSHIP.USERID1 <> null then
+		FRIENDSHIP.USER1 := USER_A;
+		FRIENDSHIP.USER2 := USER_B;
+		
+		return FRIENDSHIP;
+	end if;
+	*/
+	
+	--Search for Friends who are Friends with Friend's Friends
+	
+	
+	return FRIENDSHIP;
 END THREE_DEGREES;
 /
 
@@ -109,12 +153,36 @@ END THREE_DEGREES;
 -- Create a pending friendship from the (logged in) user to another user based on userID.
 -- The application should display the name of the person that will be sent a friends request and the user should be prompted to enter a message to be sent along with the request.
 -- A last confirmation should be requested of the user before an entry is inserted into the pendingFriends relation, and success or failure feedback is displayed for the user.
-create or replace procedure
-INITIATE_FRIENDSHIP(USER_ID in varchar2)
+create or replace function
+INITIATE_FRIENDSHIP(SENDER in varchar2, RECEIVER in varchar2, MESSAGE in varchar2)
+	return boolean
 IS
-	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
+	FRIENDSHIP varchar2(20);
+	SUCCESS boolean := false;
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	savepoint PRE_BEFRIEND;
+	
+	begin
+		--cannot send request when requester already sent to sender
+		select TOID into FRIENDSHIP from PENDING_FRIENDS where (TOID = SENDER and FROMID = RECEIVER);
+	exception
+		when NO_DATA_FOUND then
+		FRIENDSHIP := null;
+	end;
+	
+	if FRIENDSHIP <> null then
+		return false;
+	end if;
+	
+	begin
+		insert into PENDING_FRIENDS(FROMID, TOID, MESSAGE) values (SENDER, RECEIVER, MESSAGE);
+		SUCCESS := true;
+	exception
+		when OTHERS then
+			rollback to PRE_BEFRIEND;
+	end;
+	
+	return success;
 END INITIATE_FRIENDSHIP;
 /
 
@@ -123,12 +191,27 @@ END INITIATE_FRIENDSHIP;
 -- Then, the user should be prompted for a number of the request he or she would like to confirm or given the option to confirm them all.
 -- The application should move the request from the appropriate pendingFriends or pendingGroupmembers relation to the friends or groupMembership relation.
 -- The remaining requests which were not selected are declined and removed from pendingFriends and pendingGroupmembers relations.
-create or replace procedure
-CONFIRM_FRIENDSHIP
+create or replace function
+CONFIRM_FRIENDSHIP(USERID in varchar2, REQUESTER in varchar2)
+	return boolean
 IS
-	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
+	REQUEST_MESSAGE varchar2(200);
+	CONFIRMED boolean := false;
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	savepoint PRECONFIRM;
+	
+	begin
+		select MESSAGE into REQUEST_MESSAGE from PENDING_FRIENDS where (FROMID = REQUESTER and TOID = USERID);
+		insert into FRIENDS(USERID1, USERID2, JDATE, MESSAGE) values(REQUESTER, USERID, CURRENT_DATE, REQUEST_MESSAGE);
+		delete from PENDING_FRIENDS where fromID = REQUESTER and TOID = USERID;
+		
+		CONFIRMED := true;
+	exception
+		when OTHERS then
+			rollback to PRECONFIRM;
+	end;
+	
+	return CONFIRMED;
 END CONFIRM_FRIENDSHIP;
 /
 
@@ -143,7 +226,7 @@ DISPLAY_FRIENDS
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END DISPLAY_FRIENDS;
 /
 
@@ -154,7 +237,7 @@ CREATE_GROUP(NAME IN varchar2, DESCRIPTION IN varchar2, MEMBER_LIMIT IN integer)
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END CREATE_GROUP;
 /
 
@@ -166,7 +249,7 @@ INITIATE_ADDING_GROUP(USER_ID IN varchar2, GROUP_ID IN varchar2)
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END INITIATE_ADDING_GROUP;
 /
 
@@ -180,7 +263,7 @@ SEND_MESSAGE_TO_USER(FRIEND_ID IN varchar2)
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END SEND_MESSAGE_TO_USER;
 /
 
@@ -198,7 +281,7 @@ SEND_MESSAGE_TO_GROUP(GROUP_ID IN varchar2, MESSAGE IN varchar2)
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END SEND_MESSAGE_TO_GROUP;
 /
 
@@ -209,7 +292,7 @@ DISPLAY_MESSAGES
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END DISPLAY_MESSAGES;
 /
 
@@ -220,7 +303,7 @@ DISPLAY_NEW_MESSAGES
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END DISPLAY_NEW_MESSAGES;
 /
 
@@ -234,7 +317,7 @@ IS
 begin
 	--select * FROM PROFILE where ;
 	
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END SEARCH_FOR_USER;
 /
 
@@ -245,6 +328,6 @@ TOP_MESSAGES
 IS
 	OUTPUT_STRING varchar2 (255) := 'IMPLEMENT ME!';
 begin
-	DBMS_OUTPUT.put_line(OUTPUT_STRING);
+	dbms_output.put_line(OUTPUT_STRING);
 END TOP_MESSAGES;
 /
