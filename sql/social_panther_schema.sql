@@ -25,7 +25,10 @@ CREATE TABLE PROFILE(
 	lastlogin     timestamp,
 		CONSTRAINT PROFILE_PK PRIMARY KEY (userID) INITIALLY IMMEDIATE DEFERRABLE
 );
---notes: lastlogin will be updated by LOG_OUT()
+/*
+notes: lastlogin will be updated by LOG_OUT()
+	on delete should cause a trigger to help maintain things under multiple ownership
+*/
 
 
 --friends (userID1, userID2, JDate, message)
@@ -35,8 +38,8 @@ CREATE TABLE FRIENDS(
 	userID2 varchar2(20) NOT NULL,
 	JDate   date NOT NULL,
 	message varchar2(200),
-                CONSTRAINT FRIENDS_C CHECK(userID1<>userID2),
-                CONSTRAINT FRIENDS_PK PRIMARY KEY(userID1,userID2) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT FRIENDS_C CHECK(userID1<>userID2),
+		CONSTRAINT FRIENDS_PK PRIMARY KEY(userID1,userID2) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT FRIENDS_FK1 FOREIGN KEY (userID1) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT FRIENDS_FK2 FOREIGN KEY (userID2) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
@@ -52,7 +55,7 @@ CREATE TABLE PENDING_FRIENDS(
 	fromID  varchar2(20) NOT NULL,
 	toID    varchar2(20) NOT NULL,
 	message varchar2(200) DEFAULT 'I would like to befriend you.',
-                CONSTRAINT PENDING_FRIENDS_PK PRIMARY KEY(fromID,toID) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT PENDING_FRIENDS_PK PRIMARY KEY(fromID,toID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_FRIENDS_FK1 FOREIGN KEY (fromID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_FRIENDS_FK2 FOREIGN KEY (toID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
@@ -87,6 +90,7 @@ CREATE TABLE MESSAGES(
 --notes: TODO! create trigger so that either toUserID or toGroupID is populated after create
 --CONSTRAINT CHECK(fromID <> toUserID),
 
+
 --messageRecipient (msgID, userID)
 --Stores the recipients of each message stored in the system.
 CREATE TABLE MESSAGE_RECIPIENT(
@@ -117,7 +121,7 @@ CREATE TABLE PENDING_GROUP_MEMBERS(
 	gID     varchar2(20) NOT NULL,
 	userID  varchar2(20) NOT NULL,
 	message varchar2(200),
-                CONSTRAINT PENDING_GROUP_MEMBERS_PK PRIMARY KEY(gID,userID) INITIALLY IMMEDIATE DEFERRABLE,
+		CONSTRAINT PENDING_GROUP_MEMBERS_PK PRIMARY KEY(gID,userID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_GROUP_MEMBERS_FK1 FOREIGN KEY (gID) REFERENCES GROUPS(gID) INITIALLY IMMEDIATE DEFERRABLE,
 		CONSTRAINT PENDING_GROUP_MEMBERS_FK2 FOREIGN KEY (userID) REFERENCES PROFILE(userID) INITIALLY IMMEDIATE DEFERRABLE
 );
@@ -125,17 +129,17 @@ CREATE TABLE PENDING_GROUP_MEMBERS(
 
 
 --TRIGGERS
---TODO! create trigger on insert to remove row from pending_friends that matches userID1 and userID2
+
+--TODO! create trigger before insert on pending_friends to reject insert when pending_friend already sent request to sender
+
+--TODO! create trigger after insert on friends to remove row from pending_friends that matches userID1 and userID2
 /*
 create or replace trigger BEFRIEND
-	after insert on FRIENDS
+	after insert on FRIENDS referencing NEW as NEW_FRIENDSHIP
+	for each ROW
+		when(NEW_FRIENDSHIP.USERID1 = ROW.USERID1)
 begin
-	case when INSERTING then
-		delete from PENDING_FRIENDS where (FROMID = :NEW.USERID1 and TOID = :NEW.USERID2);
-	end case;
-	
-	exception when PROGRAM_ERROR then
-		rollback;
+	delete from PENDING_FRIENDS where (FROMID = :NEW_FRIENDSHIP.USERID1 and TOID = :NEW_FRIENDSHIP.USERID2);
 end;
 */
 /
